@@ -1,5 +1,7 @@
-import uuid
+import libvirt
 import os
+import string
+import uuid
 import xml.etree.ElementTree as ET
 
 class Cluster(object):
@@ -8,7 +10,7 @@ class Cluster(object):
         self.template_domain_name = template_domain_name
         self.virtcon = virtcon
 
-    def add_domain(self):
+    def add_domain(self, data_volume_count=0, data_volume_size=0):
         new_name = self.next_domain_name()
         new_id = uuid.uuid4()
         etree = ET.fromstring(self.template_domain.XMLDesc())
@@ -25,13 +27,25 @@ class Cluster(object):
         for mac in etree.findall('*/interface/mac'):
             mac.attrib['address'] = self.next_mac_address()
 
-        # TODO WRITE TEST
         domain = self.virtcon.defineXML(ET.tostring(etree))
+
+        for x in range(0, data_volume_count):
+            vol_name = "%s-data-%02d.img" % (new_name, x)
+            dev_id = "vd%s" % string.ascii_lowercase[x]
+            volume = self.create_volume(vol_name, data_volume_size)
+            self.add_volume_to_domain(domain, volume, dev_id)
+
         return domain
 
-    def add_volume_to_domain(self, domain):
-        # domain.attachDeviceFlags
-        pass
+    def add_volume_to_domain(self, domain, volume, dev_id):
+        xml = """
+        <disk type='file' device='disk'>
+          <driver name='qemu' type='qcow2'/>
+          <source file='%s'/>
+          <target dev='%s' bus='virtio'/>
+        </disk>""" % (volume.path(), dev_id)
+
+        domain.attachDeviceFlags(xml, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
 
     def detach_volume(self, domain, volume):
         pass
@@ -77,7 +91,6 @@ class Cluster(object):
         for d in self.virtcon.listAllDomains():
             etree = ET.fromstring(d.XMLDesc())
             for mac in etree.findall('*/interface/mac'):
-                print mac.attrib['address']
                 addr = int(mac.attrib['address'].replace(':', ''), 16)
                 if addr > max_mac:
                     max_mac = addr
