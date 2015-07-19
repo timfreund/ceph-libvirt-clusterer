@@ -94,6 +94,14 @@ class Cluster(object):
     def next_domain_name(self):
         return "%s-%02d" % (self.name, len(self.domains))
 
+    def power_off(self):
+        for d in self.domains:
+            d.shutdown()
+
+    def power_on(self):
+        for d in self.domains:
+            d.create()
+
     @property
     def template_domain(self):
         return self.virtcon.lookupByName(self.template_domain_name)
