@@ -64,6 +64,9 @@ Right now there's an API.  A command line interface is planned.
         cluster.add_domain(data_volume_count=3, data_volume_size=8192)
 
     cluster.power_on()
+
+    # at this point you're going to want to know the IP addresses of the machines:
+    cluster.print_ip_addresses()
     # work, work, work, work, work
     cluster.power_off()
 
