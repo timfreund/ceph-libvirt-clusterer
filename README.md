@@ -23,11 +23,11 @@ On Ubuntu/Debian machines:
 
 On RHEL/CentOS machines:
 
-    # (coming soon... installing a RHEL system now to test...)
+    # (coming soon... installing a RHEL system to test...)
 
 On openSUSE machines:
 
-    sudo apt-get install libvirt-python python-virtualenv
+    sudo zypper install libvirt-python python-virtualenv
 
 ### Clone the code and install:
 
