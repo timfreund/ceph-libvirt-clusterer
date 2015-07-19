@@ -6,7 +6,6 @@ class Cluster(object):
     def __init__(self, name, template_domain_name, virtcon):
         self.name = name
         self.template_domain_name = template_domain_name
-        self.template_domain = virtcon.lookupByName(self.template_domain_name)
         self.virtcon = virtcon
 
     def add_domain(self):
@@ -30,7 +29,10 @@ class Cluster(object):
 
     def next_domain_name(self):
         return "%s-%02d" % (self.name, len(self.domains))
-        
+
+    @property
+    def template_domain(self):
+        return self.virtcon.lookupByName(self.template_domain_name)
 
             
 
