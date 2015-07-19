@@ -11,16 +11,16 @@ class Cluster(object):
     def add_domain(self):
         new_name = self.next_domain_name()
         new_id = uuid.uuid4()
-        etree = ET.fromstring(self.template.XMLDesc())
+        etree = ET.fromstring(self.template_domain.XMLDesc())
 
         source_volume_element = etree.find('*/disk/source')
         source_volume_path = source_volume_element.attrib['file']
-        source_volume = self.virtcon.storageVolLookupByPath(template_volume_path)
+        source_volume = self.virtcon.storageVolLookupByPath(source_volume_path)
         self.duplicate_volume(source_volume, "%s.img" % new_name)
 
         etree.find("uuid").text = str(new_id)
         etree.find("name").text = new_name
-        source_volume_element.attrib['file'] = source_volume_path.replace(self.template_name, new_name)
+        source_volume_element.attrib['file'] = source_volume_path.replace(self.template_domain_name, new_name)
 
         for mac in etree.findall('*/interface/mac'):
             mac.attrib['address'] = self.next_mac_address()
@@ -82,6 +82,7 @@ class Cluster(object):
                 if addr > max_mac:
                     print "max is now %d" % addr
                     max_mac = addr
+        max_mac = "%012x" % max_mac
         max_mac = ":".join(max_mac[i:i+2] for i in range(0, 12, 2))
         return max_mac
 
