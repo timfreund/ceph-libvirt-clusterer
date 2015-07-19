@@ -80,7 +80,6 @@ class Cluster(object):
                 print mac.attrib['address']
                 addr = int(mac.attrib['address'].replace(':', ''), 16)
                 if addr > max_mac:
-                    print "max is now %d" % addr
                     max_mac = addr
         max_mac = "%012x" % max_mac
         max_mac = ":".join(max_mac[i:i+2] for i in range(0, 12, 2))
