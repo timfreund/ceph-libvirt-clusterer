@@ -4,6 +4,8 @@ import string
 import uuid
 import xml.etree.ElementTree as ET
 
+from cephlvc.network import ArpScraper
+
 class Cluster(object):
     def __init__(self, name, template_domain_name, virtcon):
         self.name = name
@@ -106,6 +108,19 @@ class Cluster(object):
 
     def next_domain_name(self):
         return "%s-%02d" % (self.name, len(self.domains))
+
+    def print_ip_addresses(self):
+        mac_to_domain = {}
+        macs = []
+        for d in self.domains:
+            etree = ET.fromstring(d.XMLDesc())
+            for mac in etree.findall('*/interface/mac'):
+                mac_to_domain[mac.attrib['address']] = d.name()
+                macs.append(mac.attrib['address'])
+        arp_scraper = ArpScraper()
+        addresses = arp_scraper.ip_lookup(macs)
+        for mac, ip in addresses:
+            print "%s %s %s" % (mac_to_domain[mac], mac, ip)
 
     def power_off(self):
         for d in self.domains:
