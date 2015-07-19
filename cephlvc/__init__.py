@@ -9,11 +9,25 @@ class Cluster(object):
         self.virtcon = virtcon
 
     def add_domain(self):
-        etree = ET.fromstring(self.template.XMLDesc())
+        new_name = self.next_domain_name()
         new_id = uuid.uuid4()
-        etree.find("uuid").text = str(new_id)
 
-        template_volume_path = etree.find('*/disk/source').attrib['file']
+        source_volume_element = etree.find('*/disk/source')
+        source_volume_path = source_volume_element.attrib['file']
+        source_volume = self.virtcon.storageVolLookupByPath(template_volume_path)
+        self.duplicate_volume(source_volume, "%s.img" % new_name)
+
+        etree = ET.fromstring(self.template.XMLDesc())
+        etree.find("uuid").text = str(new_id)
+        etree.find("name").text = new_name
+        source_volume_element.attrib['file'] = source_volume_path.replace(self.template_name, new_name)
+
+        for mac in etree.findall('*/interfaces/mac'):
+            mac.attrib['address'] = self.next_mac_address()
+
+        # TODO WRITE TEST
+        domain = self.virtcon.defineXML(ET.tostring(etree))
+        return domain
 
     def add_volume_to_domain(self, domain):
         # domain.attachDeviceFlags
@@ -57,6 +71,10 @@ class Cluster(object):
         new_xml = volume.XMLDesc().replace(template_name, new_name)
         new_vol = pool.createXMLFrom(new_xml, volume)
         return new_vol
+
+    def next_mac_address(self, mac):
+        newmac = '%012x' % (int(mac.replace(':', ''), 16) + 1)
+        return ":".join(newmac[i:i+2] for i in range(0, 12, 2))
 
     def next_domain_name(self):
         return "%s-%02d" % (self.name, len(self.domains))

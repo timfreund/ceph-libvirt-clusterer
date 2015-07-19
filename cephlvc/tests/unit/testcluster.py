@@ -18,3 +18,8 @@ class TestCluster(TestCase):
         vc.listAllDomains = MagicMock(return_value=[d])
         self.assertEqual('unittest-01', c.next_domain_name())
 
+    def test_next_mac_address(self):
+        vc = libvirt.virConnect()
+        c = Cluster('unittest', 'template_domain', vc)
+        next_mac = c.next_mac_address('00:00:00:00:00:09')
+        self.assertEquals('00:00:00:00:00:0a', next_mac)
