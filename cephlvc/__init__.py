@@ -49,9 +49,6 @@ class Cluster(object):
 
         domain.attachDeviceFlags(xml, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
 
-    def detach_volume(self, domain, volume):
-        pass
-
     def create_volume(self, name, size, pool=None):
         if not pool:
             pool = self.virtcon.listAllStoragePools()[0]
@@ -67,6 +64,9 @@ class Cluster(object):
         """ % (name, size * 1024 * 1024)
         volume = pool.createXML(xml)
         return volume
+
+    def detach_volume(self, domain, volume):
+        pass
 
     @property
     def domains(self):
