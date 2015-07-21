@@ -10,14 +10,21 @@ class Domain(object):
     def __init__(self, virDomain):
         self.domain = virDomain
 
-    @property
-    def etree(self):
-        return ET.fromstring(self.domain.XMLDesc())
-
     def __getattr__(self, attr_name):
         if hasattr(self.domain, attr_name):
             return getattr(self.domain, attr_name)
 
+    @property
+    def etree(self):
+        return ET.fromstring(self.domain.XMLDesc())
+
+    @property
+    def volume_paths(self):
+        paths = []
+        etree = self.etree
+        for source in etree.findall('*/disk/source'):
+            paths.append(source.attrib['file'])
+        return paths
 
 class Cluster(object):
     def __init__(self, name, template_domain_name, virtcon):
@@ -83,9 +90,12 @@ class Cluster(object):
             self.destroy_domain(d, and_volumes=True)
 
     def destroy_domain(self, domain, and_volumes=True):
-        pass
+        if and_volumes:
+            for path in domain.volume_paths:
+                self.destroy_volume(path)
 
-    def destroy_volume(self):
+    def destroy_volume(self, volume):
+        # refactor the code in duplicate volume for str vs volume handling
         pass
 
     def detach_volume(self, domain, volume):
