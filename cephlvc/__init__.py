@@ -6,6 +6,19 @@ import xml.etree.ElementTree as ET
 
 from cephlvc.network import ArpScraper
 
+class Domain(object):
+    def __init__(self, virDomain):
+        self.domain = virDomain
+
+    @property
+    def etree(self):
+        return ET.fromstring(self.domain.XMLDesc())
+
+    def __getattr__(self, attr_name):
+        if hasattr(self.domain, attr_name):
+            return getattr(self.domain, attr_name)
+
+
 class Cluster(object):
     def __init__(self, name, template_domain_name, virtcon):
         self.name = name
@@ -15,7 +28,7 @@ class Cluster(object):
     def add_domain(self, data_volume_count=0, data_volume_size=0):
         new_name = self.next_domain_name()
         new_id = uuid.uuid4()
-        etree = ET.fromstring(self.template_domain.XMLDesc())
+        etree = self.template_domain.etree
 
         source_volume_element = etree.find('*/disk/source')
         source_volume_path = source_volume_element.attrib['file']
@@ -29,7 +42,7 @@ class Cluster(object):
         for mac in etree.findall('*/interface/mac'):
             mac.attrib['address'] = self.next_mac_address()
 
-        domain = self.virtcon.defineXML(ET.tostring(etree))
+        domain = Domain(self.virtcon.defineXML(ET.tostring(etree)))
 
         for x in range(0, data_volume_count):
             vol_name = "%s-data-%02d.img" % (new_name, x)
@@ -65,12 +78,22 @@ class Cluster(object):
         volume = pool.createXML(xml)
         return volume
 
+    def destroy_all(self):
+        for d in self.domains:
+            self.destroy_domain(d, and_volumes=True)
+
+    def destroy_domain(self, domain, and_volumes=True):
+        pass
+
+    def destroy_volume(self):
+        pass
+
     def detach_volume(self, domain, volume):
         pass
 
     @property
     def domains(self):
-        return [d for d in self.virtcon.listAllDomains() if d.name().startswith(self.name)]
+        return [Domain(d) for d in self.virtcon.listAllDomains() if d.name().startswith(self.name)]
 
     def duplicate_volume(self, volume, new_name):
         if isinstance(volume, str):
@@ -91,7 +114,7 @@ class Cluster(object):
     def max_mac_address(self):
         max_mac = 0
         for d in self.virtcon.listAllDomains():
-            etree = ET.fromstring(d.XMLDesc())
+            etree = d.etree
             for mac in etree.findall('*/interface/mac'):
                 addr = int(mac.attrib['address'].replace(':', ''), 16)
                 if addr > max_mac:
@@ -113,7 +136,7 @@ class Cluster(object):
         mac_to_domain = {}
         macs = []
         for d in self.domains:
-            etree = ET.fromstring(d.XMLDesc())
+            etree = d.etree
             for mac in etree.findall('*/interface/mac'):
                 mac_to_domain[mac.attrib['address']] = d.name()
                 macs.append(mac.attrib['address'])
@@ -132,7 +155,7 @@ class Cluster(object):
 
     @property
     def template_domain(self):
-        return self.virtcon.lookupByName(self.template_domain_name)
+        return Domain(self.virtcon.lookupByName(self.template_domain_name))
 
             
 
