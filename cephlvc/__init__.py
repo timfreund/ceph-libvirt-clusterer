@@ -90,13 +90,21 @@ class Cluster(object):
             self.destroy_domain(d, and_volumes=True)
 
     def destroy_domain(self, domain, and_volumes=True):
+        # preloading paths because we can't get them from the domain
+        # once undefine is called
+        paths = domain.volume_paths
+
+        if domain.isActive():
+            domain.destroy()
+        domain.undefine()
+
         if and_volumes:
-            for path in domain.volume_paths:
+            for path in paths:
                 self.destroy_volume(path)
 
     def destroy_volume(self, volume):
-        # refactor the code in duplicate volume for str vs volume handling
-        pass
+        volume = self.load_volume(volume)
+        volume.delete()
 
     def detach_volume(self, domain, volume):
         pass
@@ -106,6 +114,16 @@ class Cluster(object):
         return [Domain(d) for d in self.virtcon.listAllDomains() if d.name().startswith(self.name)]
 
     def duplicate_volume(self, volume, new_name):
+        volume = self.load_volume(volume)
+        template_name = volume.name()
+        pool = volume.storagePoolLookupByVolume()
+        new_xml = volume.XMLDesc().replace(template_name, new_name)
+        new_vol = pool.createXMLFrom(new_xml, volume)
+        return new_vol
+
+    def load_volume(self, volume):
+        if isinstance(volume, libvirt.virStorageVol):
+            return volume
         if isinstance(volume, str):
             if volume.find(os.path.sep) == 0:
                 volume = self.virtcon.storageVolLookupByPath(volume)
@@ -115,11 +133,7 @@ class Cluster(object):
                         if v.name() == volume:
                             volume = v
                             break
-        template_name = volume.name()
-        pool = volume.storagePoolLookupByVolume()
-        new_xml = volume.XMLDesc().replace(template_name, new_name)
-        new_vol = pool.createXMLFrom(new_xml, volume)
-        return new_vol
+        return volume
 
     def max_mac_address(self):
         max_mac = 0
