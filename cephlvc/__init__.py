@@ -14,6 +14,18 @@ class Domain(object):
         if hasattr(self.domain, attr_name):
             return getattr(self.domain, attr_name)
 
+    def disk_count(self, bus=None):
+        targets = self.etree.findall('*/disk/target')
+
+        if not bus:
+            return len(targets)
+
+        count = 0
+        for target in targets:
+            if target.attrib['bus'] == bus:
+                count += 1
+        return count
+
     @property
     def etree(self):
         return ET.fromstring(self.domain.XMLDesc())
@@ -51,9 +63,10 @@ class Cluster(object):
 
         domain = Domain(self.virtcon.defineXML(ET.tostring(etree)))
 
+        disk_offset = domain.disk_count('virtio')
         for x in range(0, data_volume_count):
             vol_name = "%s-data-%02d.img" % (new_name, x)
-            dev_id = "vd%s" % string.ascii_lowercase[x]
+            dev_id = "vd%s" % string.ascii_lowercase[x + disk_offset]
             volume = self.create_volume(vol_name, data_volume_size)
             self.add_volume_to_domain(domain, volume, dev_id)
 
