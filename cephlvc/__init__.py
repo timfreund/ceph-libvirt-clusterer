@@ -137,7 +137,7 @@ class Cluster(object):
 
     def max_mac_address(self):
         max_mac = 0
-        for d in self.virtcon.listAllDomains():
+        for d in [Domain(d) for d in self.virtcon.listAllDomains()]:
             etree = d.etree
             for mac in etree.findall('*/interface/mac'):
                 addr = int(mac.attrib['address'].replace(':', ''), 16)
