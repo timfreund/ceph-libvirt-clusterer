@@ -180,7 +180,7 @@ class Cluster(object):
         arp_scraper = ArpScraper()
         addresses = arp_scraper.ip_lookup(macs)
         for mac, ip in addresses:
-            print "%s %s %s" % (ip, mac_to_domain[mac])
+            print "%s %s" % (ip, mac_to_domain[mac])
 
     def power_off(self):
         for d in self.domains:
