@@ -2,13 +2,17 @@ from unittest import TestCase
 import os
 import urllib2
 import libvirt
+import xml.etree.ElementTree as ET
 
 from cephlvc import Cluster
+
+CLUSTER_NAME='cephlvc-integration'
+TEMPLATE_NAME='cephlvc-cirros-template'
 
 def setUpModule():
     image_name = 'cirros-0.3.4-x86_64-disk.img'
     virt = libvirt.open()
-    c = Cluster('cephlvc-integration', '', virt)
+    c = Cluster(CLUSTER_NAME, TEMPLATE_NAME, virt)
     vol = c.load_volume(image_name)
 
     if vol is None:
@@ -43,7 +47,11 @@ def setUpModule():
     try:
         domain = c.template_domain
     except:
-        print "domain not found..."
+        with open("%s/domain-template.xml" % os.path.dirname(__file__), "r") as domain_xml_file:
+            domain_etree = ET.fromstring(domain_xml_file.read())
+            src_volume = c.load_volume(image_name)
+            volume = c.duplicate_volume(src_volume, "%s.img" % TEMPLATE_NAME)
+            domain = c.create_domain(TEMPLATE_NAME, domain_etree, volume)
 
 def tearDownModule():
     pass
@@ -51,7 +59,7 @@ def tearDownModule():
 class TestDomainManagement(TestCase):
     def test_add_domain(self):
         virtcon = libvirt.open()
-        c = Cluster("cephlvc-integration", "cephlvc-cirros-template", virtcon)
+        c = Cluster(CLUSTER_NAME, TEMPLATE_NAME, virtcon)
         self.assertEquals(0, len(c.domains))
         d = c.add_domain()
         self.assertEquals(1, len(c.domains))
