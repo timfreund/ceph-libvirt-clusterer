@@ -30,14 +30,19 @@ def tearDownModule():
     pass
 
 class TestDomainManagement(TestCase):
+    def setUp(self):
+        self.virtcon = libvirt.open()
+        self.c = Cluster(CLUSTER_NAME, TEMPLATE_NAME, self.virtcon)
+
+    def tearDown(self):
+        pass
+
     def test_add_domain(self):
-        virtcon = libvirt.open()
-        c = Cluster(CLUSTER_NAME, TEMPLATE_NAME, virtcon)
+        c = self.c
         self.assertEquals(0, len(c.domains))
         d = c.add_domain()
         self.assertEquals(1, len(c.domains))
-        self.assertEquals(0, d.undefine())
-
+        c.destroy_domain(d, and_volumes=True)
 
 def create_cirros_volume(virt, image_name):
     path = '/tmp/%s' % image_name
