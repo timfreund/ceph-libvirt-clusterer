@@ -16,34 +16,7 @@ def setUpModule():
     vol = c.load_volume(image_name)
 
     if vol is None:
-        path = '/tmp/%s' % image_name
-        url = 'https://download.cirros-cloud.net/0.3.4/%s' % image_name
-        response = urllib2.urlopen(url)
-
-        with open(path, 'w') as cirros_tmp:
-            cirros_tmp.write(response.read())
-
-        pool = virt.storagePoolLookupByName('default')
-        vol = pool.createXML("""
-        <volume type='file'>
-          <name>%s</name>
-          <capacity unit='bytes'>0</capacity>
-          <allocation unit='bytes'>0</allocation>
-          <target>
-            <format type='qcow2'/>
-          </target>
-        </volume>
-        """ % image_name)
-
-        with open(path, 'r') as cirros_tmp:
-            stream = virt.newStream(0)
-            def _stream_handler(stream, nbytes, fd):
-                return fd.read(nbytes)
-            rc = vol.upload(stream, 0, 13287936)
-            stream.sendAll(_stream_handler, cirros_tmp)
-
-        os.remove(path)
-
+        create_cirros_volume(virt, image_name)
     try:
         domain = c.template_domain
     except:
@@ -64,3 +37,33 @@ class TestDomainManagement(TestCase):
         d = c.add_domain()
         self.assertEquals(1, len(c.domains))
         self.assertEquals(0, d.undefine())
+
+
+def create_cirros_volume(virt, image_name):
+    path = '/tmp/%s' % image_name
+    url = 'https://download.cirros-cloud.net/0.3.4/%s' % image_name
+    response = urllib2.urlopen(url)
+
+    with open(path, 'w') as cirros_tmp:
+        cirros_tmp.write(response.read())
+
+    pool = virt.storagePoolLookupByName('default')
+    vol = pool.createXML("""
+        <volume type='file'>
+          <name>%s</name>
+          <capacity unit='bytes'>0</capacity>
+          <allocation unit='bytes'>0</allocation>
+          <target>
+            <format type='qcow2'/>
+          </target>
+        </volume>
+        """ % image_name)
+
+    with open(path, 'r') as cirros_tmp:
+        stream = virt.newStream(0)
+        def _stream_handler(stream, nbytes, fd):
+            return fd.read(nbytes)
+        rc = vol.upload(stream, 0, 13287936)
+        stream.sendAll(_stream_handler, cirros_tmp)
+
+    os.remove(path)
