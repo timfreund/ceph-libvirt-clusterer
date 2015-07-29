@@ -141,7 +141,7 @@ class Cluster(object):
             if volume.find(os.path.sep) == 0:
                 volume = self.virtcon.storageVolLookupByPath(volume)
             else:
-                for pool in host.listAllStoragePools():
+                for pool in self.virtcon.listAllStoragePools():
                     for v in pool.listAllVolumes():
                         if v.name() == volume:
                             volume = v
