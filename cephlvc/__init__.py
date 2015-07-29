@@ -138,12 +138,15 @@ class Cluster(object):
         if isinstance(volume, libvirt.virStorageVol):
             return volume
         if isinstance(volume, str):
-            if volume.find(os.path.sep) == 0:
-                volume = self.virtcon.storageVolLookupByPath(volume)
+            volume_name = volume
+            volume = None
+
+            if volume_name.find(os.path.sep) == 0:
+                volume = self.virtcon.storageVolLookupByPath(volume_name)
             else:
                 for pool in self.virtcon.listAllStoragePools():
                     for v in pool.listAllVolumes():
-                        if v.name() == volume:
+                        if v.name() == volume_name:
                             volume = v
                             break
         return volume
