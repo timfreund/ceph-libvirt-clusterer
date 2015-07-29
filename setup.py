@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 
 requires = [
     # 'libvirt' is likely already installed as a system package
+    'libvirt-python',
     'mock',
     'nose',
 ]

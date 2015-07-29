@@ -33,7 +33,7 @@ On openSUSE machines:
 
     git clone https://github.com/timfreund/ceph-libvirt-clusterer.git
     cd ceph-libvirt-clusterer
-    virtualenv venv
+    virtualenv --system-site-packages venv
     . venv/bin/activate
     python setup.py develop
 
