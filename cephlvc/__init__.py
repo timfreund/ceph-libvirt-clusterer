@@ -46,22 +46,14 @@ class Cluster(object):
 
     def add_domain(self, data_volume_count=0, data_volume_size=0):
         new_name = self.next_domain_name()
-        new_id = uuid.uuid4()
         etree = self.template_domain.etree
 
         source_volume_element = etree.find('*/disk/source')
         source_volume_path = source_volume_element.attrib['file']
         source_volume = self.virtcon.storageVolLookupByPath(source_volume_path)
-        self.duplicate_volume(source_volume, "%s.img" % new_name)
+        volume = self.duplicate_volume(source_volume, "%s.img" % new_name)
 
-        etree.find("uuid").text = str(new_id)
-        etree.find("name").text = new_name
-        source_volume_element.attrib['file'] = source_volume_path.replace(self.template_domain_name, new_name)
-
-        for mac in etree.findall('*/interface/mac'):
-            mac.attrib['address'] = self.next_mac_address()
-
-        domain = Domain(self.virtcon.defineXML(ET.tostring(etree)))
+        domain = self.create_domain(new_name, self.template_domain.etree, volume)
 
         disk_offset = domain.disk_count('virtio')
         for x in range(0, data_volume_count):
@@ -81,6 +73,20 @@ class Cluster(object):
         </disk>""" % (volume.path(), dev_id)
 
         domain.attachDeviceFlags(xml, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+
+    def create_domain(self, name, template_etree, source_volume):
+        etree = template_etree
+
+        etree.find("uuid").text = str(uuid.uuid4())
+        etree.find("name").text = name
+
+        source_volume_element = etree.find('*/disk/source')
+        source_volume_element.attrib['file'] = source_volume.path()
+
+        for mac in etree.findall('*/interface/mac'):
+            mac.attrib['address'] = self.next_mac_address()
+
+        return Domain(self.virtcon.defineXML(ET.tostring(etree)))
 
     def create_volume(self, name, size, pool=None):
         if not pool:
